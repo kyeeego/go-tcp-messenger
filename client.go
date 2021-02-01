@@ -12,19 +12,23 @@ import (
 type Client struct {
 	conn      net.Conn
 	reader    bufio.Reader
-	server    *Server
+	hub       *Hub
 	outcoming chan string
 }
 
 // NewClient ...
-func NewClient(conn net.Conn, srv *Server) *Client {
+func NewClient(conn net.Conn, hub *Hub) *Client {
 
 	cl := &Client{
 		conn:      conn,
 		reader:    *bufio.NewReader(os.Stdin),
-		server:    srv,
+		hub:       hub,
 		outcoming: make(chan string),
 	}
+
+	hub.clients = append(hub.clients, cl)
+
+	fmt.Printf("Connected to %s", hub.name)
 
 	cl.Work()
 
@@ -39,7 +43,7 @@ func (cl *Client) Work() {
 
 func (cl *Client) Read() {
 	for {
-		tmp := make([]byte, 256)
+		tmp := make([]byte, 1024)
 		_, err := cl.conn.Read(tmp)
 		if err != nil {
 			log.Fatal(err)
@@ -51,9 +55,8 @@ func (cl *Client) Read() {
 
 func (cl *Client) Write() {
 	for msg := range cl.outcoming {
-		msg = fmt.Sprintf("Message: %s\nFrom: %s\n", msg, cl.conn.RemoteAddr().String())
-		for _, c := range cl.server.clients {
-			c.conn.Write([]byte(msg))
-		}
+		msg = fmt.Sprintf("Message: %sFrom: %s\n\n", msg, cl.conn.RemoteAddr().String())
+
+		cl.hub.broadcast(msg)
 	}
 }

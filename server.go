@@ -5,24 +5,35 @@ import (
 	"net"
 )
 
+// consts ...
+const (
+	JOIN = "!join"
+)
+
 // Server ...
 type Server struct {
-	clients []*Client
+	hubs []*Hub
 }
 
 // NewServer creates a new Server instance
 func NewServer() *Server {
-	var cls []*Client
+	var hubs []*Hub
 	return &Server{
-		clients: cls,
+		hubs: hubs,
 	}
 }
 
 // Run runs a server
 func (srv *Server) Run() {
-	ln, err := net.Listen("tcp", ":8081")
+	ln, err := net.Listen("tcp", "127.0.0.1:8081")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	var cls []*Client
+	mainHub := &Hub{
+		name:    "Main",
+		clients: cls,
 	}
 
 	for {
@@ -30,9 +41,9 @@ func (srv *Server) Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cl := NewClient(conn, srv)
+		_ = NewClient(conn, mainHub)
 
 		// Adding new connection to the "Hub"
-		srv.clients = append(srv.clients, cl)
+		// srv.clients = append(srv.clients, cl)
 	}
 }
