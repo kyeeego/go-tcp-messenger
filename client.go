@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
+	"strings"
 )
 
 // Client ...
@@ -21,7 +21,7 @@ func NewClient(conn net.Conn, hub *Hub) *Client {
 
 	cl := &Client{
 		conn:      conn,
-		reader:    *bufio.NewReader(os.Stdin),
+		reader:    *bufio.NewReader(conn),
 		hub:       hub,
 		outcoming: make(chan string),
 	}
@@ -43,20 +43,36 @@ func (cl *Client) Work() {
 
 func (cl *Client) Read() {
 	for {
-		tmp := make([]byte, 1024)
-		_, err := cl.conn.Read(tmp)
+		// tmp := make([]byte, 1024)
+		// _, err := cl.conn.Read(tmp)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+
+		msg, err := cl.reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			cl.conn.Close()
+			return
 		}
 
-		cl.outcoming <- string(tmp)
+		msg = strings.Trim(msg, "\r\n")
+
+		args := strings.Split(msg, " ")
+		cmd := strings.TrimSpace(args[0])
+
+		isCmd := cl.IsCommand(cmd)
+		if !isCmd {
+			cl.outcoming <- msg
+			continue
+		}
+		cl.ExecCommand(cmd)
 	}
 }
 
 func (cl *Client) Write() {
 	for msg := range cl.outcoming {
-		msg = fmt.Sprintf("Message: %sFrom: %s\n\n", msg, cl.conn.RemoteAddr().String())
-
+		msg = fmt.Sprintf("Message: %s\nFrom: %s\n\n", msg, cl.conn.RemoteAddr().String())
 		cl.hub.broadcast(msg)
 	}
 }
