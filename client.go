@@ -10,6 +10,7 @@ import (
 
 // Client ...
 type Client struct {
+	name      string
 	conn      net.Conn
 	reader    bufio.Reader
 	hub       *Hub
@@ -20,6 +21,7 @@ type Client struct {
 func NewClient(conn net.Conn, hub *Hub) *Client {
 
 	cl := &Client{
+		name:      "annonymous",
 		conn:      conn,
 		reader:    *bufio.NewReader(conn),
 		hub:       hub,
@@ -43,12 +45,6 @@ func (cl *Client) Work() {
 
 func (cl *Client) Read() {
 	for {
-		// tmp := make([]byte, 1024)
-		// _, err := cl.conn.Read(tmp)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-
 		msg, err := cl.reader.ReadString('\n')
 		if err != nil {
 			log.Println(err)
@@ -66,13 +62,13 @@ func (cl *Client) Read() {
 			cl.outcoming <- msg
 			continue
 		}
-		cl.ExecCommand(cmd)
+		cl.ExecCommand(cmd, args)
 	}
 }
 
 func (cl *Client) Write() {
 	for msg := range cl.outcoming {
-		msg = fmt.Sprintf("Message: %s\nFrom: %s\n\n", msg, cl.conn.RemoteAddr().String())
+		msg = fmt.Sprintf("%s: %s\n\n", cl.name, msg)
 		cl.hub.broadcast(msg)
 	}
 }

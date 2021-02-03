@@ -5,11 +5,6 @@ import (
 	"net"
 )
 
-// consts ...
-const (
-	JOIN = "!join"
-)
-
 // Server ...
 type Server struct {
 	hubs []*Hub
@@ -32,7 +27,7 @@ func (srv *Server) Run() {
 
 	var cls []*Client
 	mainHub := &Hub{
-		name:    "Main",
+		name:    "main",
 		clients: cls,
 	}
 
@@ -42,8 +37,5 @@ func (srv *Server) Run() {
 			log.Fatal(err)
 		}
 		_ = NewClient(conn, mainHub)
-
-		// Adding new connection to the "Hub"
-		// srv.clients = append(srv.clients, cl)
 	}
 }
